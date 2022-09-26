@@ -1,7 +1,8 @@
 #include"webserver.h"
 
-WebServer::WebServer(int port, int threadNum)
-    : m_port(port), m_threadpool(new ThreadPool(threadNum)), m_epoller(new Epoller())
+WebServer::WebServer(int port, int threadNum, int close_log, std::string user, std::string passwd, std::string sqlname)
+    : m_port(port), m_threadpool(new ThreadPool(threadNum)), m_epoller(new Epoller()),
+    m_closeLog(close_log), m_user(user), m_passwd(passwd), m_sqlname(sqlname)
 {
     sourceDir = getcwd(nullptr, 256);
     strncat(sourceDir, "/root/", 6);
@@ -63,13 +64,13 @@ void WebServer::run(){
                 dealListenEvent();
             }
             else if(events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)){
-                closeHttpConn();
+                closeHttpConn(fd);
             }
             else if(events & EPOLLIN){
-                dealReadEvent();
+                dealReadEvent(&m_users[fd]);
             }
             else if(events & EPOLLOUT){
-                dealWriteEvent();
+                dealWriteEvent(&m_users[fd]);
             }
         }
     }
@@ -90,19 +91,42 @@ void WebServer::dealListenEvent(){
 }
 
 void WebServer::addClient(int fd, struct sockaddr_in addr){
-    //初始化一个http连接对象
+    m_users[fd].init(fd, addr, sourceDir, m_closeLog, m_user, m_passwd, m_sqlname);
     m_epoller->addFd(fd, EPOLLIN | conn_events);
     setNonBlock(fd);
 }
 
-void WebServer::closeHttpConn(){
-
+void WebServer::closeHttpConn(int fd){
+    m_users.erase(fd);
+    m_epoller->delFd(fd);
+    close(fd);
 }
 
-void WebServer::dealReadEvent(){
-
+void WebServer::dealReadEvent(Http* client){
+    m_threadpool->addTask(std::bind(&WebServer::dealRead, this, client));
 }
 
-void WebServer::dealWriteEvent(){
+void WebServer::dealWriteEvent(Http* client){
+    m_threadpool->addTask(std::bind(&WebServer::dealWrite, this, client));
+}
 
+void WebServer::dealRead(Http* client){
+    client->read_once();
+    if(client->process()){
+        m_epoller->modFd(client->getFd(), EPOLLIN | conn_events);
+    }
+    else{
+        m_epoller->modFd(client->getFd(), EPOLLOUT | conn_events);
+    }
+}
+
+void WebServer::dealWrite(Http* client){
+    int save_errno = 0;
+    client->write(&save_errno);
+    if(save_errno == EAGAIN){
+        m_epoller->modFd(client->getFd(), EPOLLOUT | conn_events);
+    }
+    else{
+        m_epoller->modFd(client->getFd(), EPOLLIN | conn_events);
+    }
 }
