@@ -1,0 +1,14 @@
+
+.head {font-family:verdana;padding:20px;border-radius:20px;border:10px solid #16a4eb;
+ 	background: #a2ff99; padding: 50px; text-align:center; font-size:large}
+
+.main {padding:10px; background-color:#fdfdfd;text-align:center;font-family:verdana;padding:20px;border-radius:20px;border:10px solid #16a4eb;
+	 }
+
+.side {
+	 padding:20px; background-color:#60f4a5; vertical-align:top}
+
+.bottom {font-family:verdana;padding:20px;border-radius:20px;border:10px solid #16a4eb;
+	padding: 20px; background:#99ecff; text-align:center;}
+
+
