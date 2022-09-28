@@ -104,6 +104,8 @@ private:
     bool add_linger();
     bool add_blank_line();
 
+    //根据路径读入html
+    bool read_html(string url);
 public:
     static int m_epollfd;
     static int m_user_count;
@@ -144,5 +146,9 @@ private:
     char sql_passwd[100];
     char sql_name[100];
     std::mutex m_mutex;
+
+    //传输内容的缓存,用来在业务部分将需要响应的content填入，在process_write中再写入实际的传输响应缓存m_write_buf中
+    char content_buf[WRITE_BUFFER_SIZE];
+    int content_idx = 0;
 };
 #endif

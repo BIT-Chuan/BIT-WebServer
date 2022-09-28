@@ -288,29 +288,61 @@ Http::HTTP_CODE Http::do_request()
     int len = strlen(doc_root);
     //printf("m_url:%s\n", m_url);
     const char *p = strrchr(m_url, '/');
+    int index = p - &m_url[0]+1;
+    string s = m_url;
+    s = s.str(index, strlen(m_url) - index);
 
     //根据请求url执行业务
     //URL: http://IP address:port/page1.html
-    if(*(p + 1) == 'p'){
-        char *m_url_real = (char *)malloc(sizeof(char) * 200);
-        strcpy(m_url_real,"/page1.html");
-        //将网站目录和/register.html进行拼接，更新到m_real_file中
-        strncpy(m_real_file+len,m_url_real,strlen(m_url_real));
-        free(m_url_real);
+    if(s == "page1.html"){
+        //获取 /page1.html的内容并加入到content_buf中去
+        read_html(s);
+    }
+    //http://IP address:port/
+    else if(s == ""){
+        s = "index.html";
+        read_html(s);
+    }
+    //URL: http://IP address:port/cgi-bin/calculator.pl 且请求为post
+    else if(s == "calculator.pl" && m_method == POST){
+        //执行计算操作并将计算结果的html文本形式放入content_buf
+        char a_string[100], b_string[100];
+        int i = 0;
+        while(m_string[i] != '+'){
+            a_string[i] = m_string[i];
+            ++i;
+        }
+        ++i;
+        int j = 0;
+        while(m_string[i] != '\0'){
+            b_string[j] = m_string[i];
+            ++j;
+            ++i;
+        }
+        int a = atoi(a_string);
+        int b = atoi(b_string);
+        int ans = a + b;
+        snprintf(content_buf, sizeof(content_buf), "%d", ans);
+    }
+    else if(s == "calculator.pl" && m_method == GET){
+        s = "calculator.html";
+        read_html(s);
+    }
+    //URL: http://IP address:port/cgi-bin/query.pl 请求为GET,传递html页面
+    else if(s == "query.pl" && m_method == GET){
+        s = "query.html";
+        read_html(s);
+    }
+    //URL: http://IP address:port/cgi-bin/query.pl 请求为POST,返回查询内容
+    else if(s == "query.pl" && m_method == POST){
+        //请求体内容为：  ID=${id}
+        char id[100];
+        for (int i = 3; m_string[i] != '\0'; ++i)id[i-3] = m_string[i];
+        //todo:根据id返回sql结果
+        
+        //todo:将学生信息的html文本形式放入m_write_buf
 
-        //获取 /page1.html的内容并加入到m_write_buf中去
     }
-    //URL: http://IP address:port/cgi-bin/calculator.pl 
-    else if(*(p + 1) == 'c'){
-        //执行计算操作并将计算结果的html文本形式放入m_write_buf
-    }
-    //URL: http://IP address:port/cgi-bin/query.pl (assuming it is in PERL)
-    else if(*(p + 1) == 'q'){
-        //执行插入操作
-        //返回sql结果
-        //将学生信息的html文本形式放入m_write_buf
-    }
-
     // //处理cgi
     // if (cgi == 1 && (*(p + 1) == '2' || *(p + 1) == '3'))
     // {
@@ -595,8 +627,8 @@ bool Http::process_write(HTTP_CODE ret)
         if (m_file_stat.st_size != 0)
         {
             //往缓冲区写入首部及内容
-            add_headers(m_write_idx);
-            add_content(m_write_buf);
+            add_headers(content_idx);
+            add_content(content_buf);
             m_iv[0].iov_base = m_write_buf;
             m_iv[0].iov_len = m_write_idx;
             m_iv_count = 1;
@@ -629,4 +661,21 @@ bool Http::process()
     }
     bool write_ret = process_write(read_ret);
     return false;
+}
+
+bool Http::read_html(string url){
+    ifstream infile;
+	infile.open(url);
+	if (!infile.is_open())
+	{
+		LOG_ERROR("Html error: 打开文件失败\n");
+		return false;
+	}
+	string buf;
+	while (getline(infile,buf))
+	{
+		strcat(content_buf,buf.c_str());
+        content_idx += strlen(buf.c_str);
+	}
+	return true;
 }
