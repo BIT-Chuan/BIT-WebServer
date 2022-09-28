@@ -277,121 +277,180 @@ Http::HTTP_CODE Http::process_read()
     return NO_REQUEST;
 }
 
+/**
+ * @brief 对请求进行解析（并执行业务逻辑？）
+ * 
+ * @return Http::HTTP_CODE 
+ */
 Http::HTTP_CODE Http::do_request()
 {
     strcpy(m_real_file, doc_root);
     int len = strlen(doc_root);
     //printf("m_url:%s\n", m_url);
     const char *p = strrchr(m_url, '/');
+    int index = p - &m_url[0]+1;
+    string s = m_url;
+    s = s.str(index, strlen(m_url) - index);
 
-    //处理cgi
-    if (cgi == 1 && (*(p + 1) == '2' || *(p + 1) == '3'))
-    {
-
-        //根据标志判断是登录检测还是注册检测
-        char flag = m_url[1];
-
-        char *m_url_real = (char *)malloc(sizeof(char) * 200);
-        strcpy(m_url_real, "/");
-        strcat(m_url_real, m_url + 2);
-        strncpy(m_real_file + len, m_url_real, FILENAME_LEN - len - 1);
-        free(m_url_real);
-
-        //将用户名和密码提取出来
-        //user=123&passwd=123
-        char name[100], password[100];
-        int i;
-        for (i = 5; m_string[i] != '&'; ++i)
-            name[i - 5] = m_string[i];
-        name[i - 5] = '\0';
-
+    //根据请求url执行业务
+    //URL: http://IP address:port/page1.html
+    if(s == "page1.html"){
+        //获取 /page1.html的内容并加入到content_buf中去
+        read_html(s);
+    }
+    //http://IP address:port/
+    else if(s == ""){
+        s = "index.html";
+        read_html(s);
+    }
+    //URL: http://IP address:port/cgi-bin/calculator.pl 且请求为post
+    else if(s == "calculator.pl" && m_method == POST){
+        //执行计算操作并将计算结果的html文本形式放入content_buf
+        char a_string[100], b_string[100];
+        int i = 0;
+        while(m_string[i] != '+'){
+            a_string[i] = m_string[i];
+            ++i;
+        }
+        ++i;
         int j = 0;
-        for (i = i + 10; m_string[i] != '\0'; ++i, ++j)
-            password[j] = m_string[i];
-        password[j] = '\0';
+        while(m_string[i] != '\0'){
+            b_string[j] = m_string[i];
+            ++j;
+            ++i;
+        }
+        int a = atoi(a_string);
+        int b = atoi(b_string);
+        int ans = a + b;
+        snprintf(content_buf, sizeof(content_buf), "%d", ans);
+    }
+    else if(s == "calculator.pl" && m_method == GET){
+        s = "calculator.html";
+        read_html(s);
+    }
+    //URL: http://IP address:port/cgi-bin/query.pl 请求为GET,传递html页面
+    else if(s == "query.pl" && m_method == GET){
+        s = "query.html";
+        read_html(s);
+    }
+    //URL: http://IP address:port/cgi-bin/query.pl 请求为POST,返回查询内容
+    else if(s == "query.pl" && m_method == POST){
+        //请求体内容为：  ID=${id}
+        char id[100];
+        for (int i = 3; m_string[i] != '\0'; ++i)id[i-3] = m_string[i];
+        //todo:根据id返回sql结果
+        
+        //todo:将学生信息的html文本形式放入m_write_buf
 
-        if (*(p + 1) == '3')
-        {
-            //如果是注册，先检测数据库中是否有重名的
-            //没有重名的，进行增加数据
-            char *sql_insert = (char *)malloc(sizeof(char) * 200);
-            strcpy(sql_insert, "INSERT INTO user(username, passwd) VALUES(");
-            strcat(sql_insert, "'");
-            strcat(sql_insert, name);
-            strcat(sql_insert, "', '");
-            strcat(sql_insert, password);
-            strcat(sql_insert, "')");
+    }
+    // //处理cgi
+    // if (cgi == 1 && (*(p + 1) == '2' || *(p + 1) == '3'))
+    // {
 
-            if (users.find(name) == users.end())
-            {
-                int res = 0;
-                {
-                    lock_guard<mutex>locker(m_mutex);
-                    res = mysql_query(mysql, sql_insert);
-                    users.insert(pair<string, string>(name, password));
-                }
+    //     //根据标志判断是登录检测还是注册检测
+    //     char flag = m_url[1];
+
+    //     char *m_url_real = (char *)malloc(sizeof(char) * 200);
+    //     strcpy(m_url_real, "/");
+    //     strcat(m_url_real, m_url + 2);
+    //     strncpy(m_real_file + len, m_url_real, FILENAME_LEN - len - 1);
+    //     free(m_url_real);
+
+    //     //将用户名和密码提取出来
+    //     //user=123&passwd=123
+    //     char name[100], password[100];
+    //     int i;
+    //     for (i = 5; m_string[i] != '&'; ++i)
+    //         name[i - 5] = m_string[i];
+    //     name[i - 5] = '\0';
+
+    //     int j = 0;
+    //     for (i = i + 10; m_string[i] != '\0'; ++i, ++j)
+    //         password[j] = m_string[i];
+    //     password[j] = '\0';
+
+    //     if (*(p + 1) == '3')
+    //     {
+    //         //如果是注册，先检测数据库中是否有重名的
+    //         //没有重名的，进行增加数据
+    //         char *sql_insert = (char *)malloc(sizeof(char) * 200);
+    //         strcpy(sql_insert, "INSERT INTO user(username, passwd) VALUES(");
+    //         strcat(sql_insert, "'");
+    //         strcat(sql_insert, name);
+    //         strcat(sql_insert, "', '");
+    //         strcat(sql_insert, password);
+    //         strcat(sql_insert, "')");
+
+    //         if (users.find(name) == users.end())
+    //         {
+    //             int res = 0;
+    //             {
+    //                 lock_guard<mutex>locker(m_mutex);
+    //                 res = mysql_query(mysql, sql_insert);
+    //                 users.insert(pair<string, string>(name, password));
+    //             }
                 
-                if (!res)
-                    strcpy(m_url, "/log.html");
-                else
-                    strcpy(m_url, "/registerError.html");
-            }
-            else
-                strcpy(m_url, "/registerError.html");
-        }
-        //如果是登录，直接判断
-        //若浏览器端输入的用户名和密码在表中可以查找到，返回1，否则返回0
-        else if (*(p + 1) == '2')
-        {
-            if (users.find(name) != users.end() && users[name] == password)
-                strcpy(m_url, "/welcome.html");
-            else
-                strcpy(m_url, "/logError.html");
-        }
-    }
+    //             if (!res)
+    //                 strcpy(m_url, "/log.html");
+    //             else
+    //                 strcpy(m_url, "/registerError.html");
+    //         }
+    //         else
+    //             strcpy(m_url, "/registerError.html");
+    //     }
+    //     //如果是登录，直接判断
+    //     //若浏览器端输入的用户名和密码在表中可以查找到，返回1，否则返回0
+    //     else if (*(p + 1) == '2')
+    //     {
+    //         if (users.find(name) != users.end() && users[name] == password)
+    //             strcpy(m_url, "/welcome.html");
+    //         else
+    //             strcpy(m_url, "/logError.html");
+    //     }
+    // }
 
-    if (*(p + 1) == '0')
-    {
-        char *m_url_real = (char *)malloc(sizeof(char) * 200);
-        strcpy(m_url_real, "/register.html");
-        strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
+    // if (*(p + 1) == '0')
+    // {
+    //     char *m_url_real = (char *)malloc(sizeof(char) * 200);
+    //     strcpy(m_url_real, "/register.html");
+    //     strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
 
-        free(m_url_real);
-    }
-    else if (*(p + 1) == '1')
-    {
-        char *m_url_real = (char *)malloc(sizeof(char) * 200);
-        strcpy(m_url_real, "/log.html");
-        strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
+    //     free(m_url_real);
+    // }
+    // else if (*(p + 1) == '1')
+    // {
+    //     char *m_url_real = (char *)malloc(sizeof(char) * 200);
+    //     strcpy(m_url_real, "/log.html");
+    //     strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
 
-        free(m_url_real);
-    }
-    else if (*(p + 1) == '5')
-    {
-        char *m_url_real = (char *)malloc(sizeof(char) * 200);
-        strcpy(m_url_real, "/picture.html");
-        strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
+    //     free(m_url_real);
+    // }
+    // else if (*(p + 1) == '5')
+    // {
+    //     char *m_url_real = (char *)malloc(sizeof(char) * 200);
+    //     strcpy(m_url_real, "/picture.html");
+    //     strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
 
-        free(m_url_real);
-    }
-    else if (*(p + 1) == '6')
-    {
-        char *m_url_real = (char *)malloc(sizeof(char) * 200);
-        strcpy(m_url_real, "/video.html");
-        strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
+    //     free(m_url_real);
+    // }
+    // else if (*(p + 1) == '6')
+    // {
+    //     char *m_url_real = (char *)malloc(sizeof(char) * 200);
+    //     strcpy(m_url_real, "/video.html");
+    //     strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
 
-        free(m_url_real);
-    }
-    else if (*(p + 1) == '7')
-    {
-        char *m_url_real = (char *)malloc(sizeof(char) * 200);
-        strcpy(m_url_real, "/fans.html");
-        strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
+    //     free(m_url_real);
+    // }
+    // else if (*(p + 1) == '7')
+    // {
+    //     char *m_url_real = (char *)malloc(sizeof(char) * 200);
+    //     strcpy(m_url_real, "/fans.html");
+    //     strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
 
-        free(m_url_real);
-    }
-    else
-        strncpy(m_real_file + len, m_url, FILENAME_LEN - len - 1);
+    //     free(m_url_real);
+    // }
+    // else
+    //     strncpy(m_real_file + len, m_url, FILENAME_LEN - len - 1);
 
     if (stat(m_real_file, &m_file_stat) < 0)
         return NO_RESOURCE;
@@ -402,9 +461,9 @@ Http::HTTP_CODE Http::do_request()
     if (S_ISDIR(m_file_stat.st_mode))
         return BAD_REQUEST;
 
-    int fd = open(m_real_file, O_RDONLY);
-    m_file_address = (char *)mmap(0, m_file_stat.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-    close(fd);
+    // int fd = open(m_real_file, O_RDONLY);
+    // m_file_address = (char *)mmap(0, m_file_stat.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    // close(fd);
     return FILE_REQUEST;
 }
 void Http::unmap()
@@ -470,6 +529,14 @@ bool Http::write(int* save_errno)
         }
     }
 }
+/**
+ * @brief 添加响应信息
+ * 
+ * @param format 
+ * @param ... 
+ * @return true 
+ * @return false 
+ */
 bool Http::add_response(const char *format, ...)
 {
     if (m_write_idx >= WRITE_BUFFER_SIZE)
@@ -518,6 +585,13 @@ bool Http::add_content(const char *content)
 {
     return add_response("%s", content);
 }
+/**
+ * @brief 用于将返回数据写入写缓存段
+ * 
+ * @param ret 回复状态码
+ * @return true 缓存段写入成功
+ * @return false 缓存段写入失败
+ */
 bool Http::process_write(HTTP_CODE ret)
 {
     switch (ret)
@@ -546,18 +620,19 @@ bool Http::process_write(HTTP_CODE ret)
             return false;
         break;
     }
+    //请求正常的情况
     case FILE_REQUEST:
     {
         add_status_line(200, ok_200_title);
         if (m_file_stat.st_size != 0)
         {
-            add_headers(m_file_stat.st_size);
+            //往缓冲区写入首部及内容
+            add_headers(content_idx);
+            add_content(content_buf);
             m_iv[0].iov_base = m_write_buf;
             m_iv[0].iov_len = m_write_idx;
-            m_iv[1].iov_base = m_file_address;
-            m_iv[1].iov_len = m_file_stat.st_size;
-            m_iv_count = 2;
-            bytes_to_send = m_write_idx + m_file_stat.st_size;
+            m_iv_count = 1;
+            bytes_to_send = m_write_idx;
             return true;
         }
         else
@@ -586,4 +661,21 @@ bool Http::process()
     }
     bool write_ret = process_write(read_ret);
     return false;
+}
+
+bool Http::read_html(string url){
+    ifstream infile;
+	infile.open(url);
+	if (!infile.is_open())
+	{
+		LOG_ERROR("Html error: 打开文件失败\n");
+		return false;
+	}
+	string buf;
+	while (getline(infile,buf))
+	{
+		strcat(content_buf,buf.c_str());
+        content_idx += strlen(buf.c_str);
+	}
+	return true;
 }
