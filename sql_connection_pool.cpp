@@ -67,6 +67,11 @@ MYSQL *connection_pool::GetConnection()
 	MYSQL_ROW sel_row;	//一行数据的“类型安全”表示，通过调用mysql_fetch_row()从MYSQL_RES变量获得
 	int res_num;		//存放结果集列数
 	
+	MYSQL *con = NULL;
+
+	if (connList.size() == 0 )
+		return NULL;
+	
 	//查询对应的所有信息
 	if (mysql_query(con, "SELECT * FROM users"))	//若查询失败
 		{ 
@@ -87,11 +92,8 @@ MYSQL *connection_pool::GetConnection()
 			cout << endl;
 		}
 		mysql_free_result(sel_res);			//释放结果集所占用的内存
-	MYSQL *con = NULL;
-
-	if (connList.size() == 0 )
-		return NULL;
-
+	}
+	
 	reserve.wait();
 	
 	lock.lock();
