@@ -1,12 +1,12 @@
 #include"epoller.h"
 
-Epoller::Epoller(int maxEvents) : epollFd(epoll_create(1)), epollEvents(maxEvents) {}
+Epoller::Epoller(int maxEvents) : epollFd(epoll_create(512)), epollEvents(maxEvents) {}
 
 Epoller::~Epoller(){
     close(epollFd);
 }
 
-void Epoller::addFd(int fd, uint32_t events){
+int Epoller::addFd(int fd, uint32_t events){
     struct epoll_event ev;
     ev.data.fd = fd;
     ev.events = events;

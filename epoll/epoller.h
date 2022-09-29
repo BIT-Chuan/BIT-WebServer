@@ -10,7 +10,7 @@ class Epoller{
 public:
     Epoller(int maxEvents = 1024);
     ~Epoller();
-    void addFd(int fd, uint32_t events);
+    int addFd(int fd, uint32_t events);
     void delFd(int fd);
     void modFd(int fd, uint32_t events);
     int getEventFd(int i) const;

@@ -1,17 +1,20 @@
 #include"webserver.h"
+using namespace std;
 
 WebServer::WebServer(int port, int threadNum, int close_log, std::string user, std::string passwd, std::string sqlname)
-    : m_port(port), m_threadpool(new ThreadPool(threadNum)), m_epoller(new Epoller()),
+    : m_port(port), m_threadpool(new ThreadPool(threadNum)), m_epoller(new Epoller(10)),
     m_closeLog(close_log), m_user(user), m_passwd(passwd), m_sqlname(sqlname)
 {
     sourceDir = getcwd(nullptr, 256);
     strncat(sourceDir, "/root/", 6);
-    
-    isClosed = true;
+    //Http::doc_root = sourceDir;
+
+    isClosed = false;
     listen_events = EPOLLRDHUP | EPOLLET;
     conn_events = EPOLLONESHOT | EPOLLRDHUP | EPOLLET;
     
     if(!initListenSocket()){
+        Log::getInstance()->writelog(3, "localhost", "Create listenfd failed!\n");
         isClosed = true;
     }
 }
@@ -29,7 +32,7 @@ bool WebServer::initListenSocket(){
     struct sockaddr_in address;
     bzero(&address, sizeof(address));
     address.sin_family = AF_INET;
-    address.sin_port = m_port;
+    address.sin_port = htons(m_port);
     address.sin_addr.s_addr = htonl(INADDR_ANY);
 
     ret = bind(listenFd, (struct sockaddr*)&address, sizeof(address));
@@ -42,7 +45,7 @@ bool WebServer::initListenSocket(){
         return false;
     }
 
-    m_epoller->addFd(listenFd, listen_events | EPOLLIN);
+    ret = m_epoller->addFd(listenFd, listen_events | EPOLLIN);
     setNonBlock(listenFd);
 
     return true;
@@ -55,6 +58,7 @@ void WebServer::setNonBlock(int fd){
 }
 
 void WebServer::run(){
+    Log::getInstance()->writelog(1, "localhost", "Server Running!\n");
     while(!isClosed){
         int count = m_epoller->epollWait();
         for(int i = 0; i < count; ++i){
@@ -67,9 +71,15 @@ void WebServer::run(){
                 closeHttpConn(fd);
             }
             else if(events & EPOLLIN){
+                char str[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, &(m_users[fd].get_address()->sin_addr), str, sizeof(str));
+                Log::getInstance()->writelog(1, static_cast<string>(str), "Read event\n");
                 dealReadEvent(&m_users[fd]);
             }
             else if(events & EPOLLOUT){
+                char str[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, &(m_users[fd].get_address()->sin_addr), str, sizeof(str));
+                Log::getInstance()->writelog(1, static_cast<string>(str), "Write event\n");
                 dealWriteEvent(&m_users[fd]);
             }
         }
@@ -85,6 +95,9 @@ void WebServer::dealListenEvent(){
         if(fd <= 0){
             break;
         }
+        char str[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &addr.sin_addr, str, sizeof(str));
+        Log::getInstance()->writelog(1, static_cast<string>(str), "Client connected\n");
         addClient(fd, addr);
     }
     return;
@@ -97,8 +110,14 @@ void WebServer::addClient(int fd, struct sockaddr_in addr){
 }
 
 void WebServer::closeHttpConn(int fd){
+    char str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(m_users[fd].get_address()->sin_addr), str, sizeof(str));
+    Log::getInstance()->writelog(1, static_cast<string>(str), "Client disconnected\n");
+    cout << "closeconn" << endl;
     m_users.erase(fd);
+    cout << "erase success" << endl;
     m_epoller->delFd(fd);
+    cout << "epoll delfd success" << endl;
     close(fd);
 }
 
@@ -122,11 +141,15 @@ void WebServer::dealRead(Http* client){
 
 void WebServer::dealWrite(Http* client){
     int save_errno = 0;
-    client->write(&save_errno);
-    if(save_errno == EAGAIN){
-        m_epoller->modFd(client->getFd(), EPOLLOUT | conn_events);
+    if(!client->write(&save_errno)){
+        closeHttpConn(client->getFd());
     }
     else{
-        m_epoller->modFd(client->getFd(), EPOLLIN | conn_events);
+        if(save_errno == EAGAIN){
+            m_epoller->modFd(client->getFd(), EPOLLOUT | conn_events);
+        }
+        else{
+            m_epoller->modFd(client->getFd(), EPOLLIN | conn_events);
+        }
     }
 }

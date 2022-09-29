@@ -22,6 +22,11 @@
 #include <sys/uio.h>
 #include <unordered_map>
 #include<mutex>
+#include<fstream>
+#include<cstring>
+#include<iostream>
+
+#include"../log/log.h"
 
 class Http{
 public:
@@ -77,7 +82,7 @@ public:
     {
         return &m_address;
     }
-    void initmysql_result(connection_pool *connPool);
+    //void initmysql_result(connection_pool *connPool);
     int timer_flag;
     int improv;
     int getFd(){
@@ -105,11 +110,11 @@ private:
     bool add_blank_line();
 
     //根据路径读入html
-    bool read_html(string url);
+    bool read_html(std::string url);
 public:
     static int m_epollfd;
     static int m_user_count;
-    MYSQL *mysql;
+    //MYSQL *mysql;
     int m_state;  //读为0, 写为1
 
 private:

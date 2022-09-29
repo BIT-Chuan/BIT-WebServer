@@ -1,6 +1,7 @@
 #ifndef WEBSERVER_H
 #define WEBSERVER_H
 
+#include<iostream>
 #include<unistd.h>
 #include<sys/socket.h>
 #include<netinet/in.h>
@@ -12,6 +13,7 @@
 #include"../pool/threadpool.h"
 #include"../epoll/epoller.h"
 #include"../http/http.h"
+#include"../log/log.h"
 
 class WebServer{
 public:

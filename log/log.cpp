@@ -6,6 +6,9 @@
 #include <sys/time.h>
 #include"log.h"
 using namespace std;
+
+Log* Log::m_log = new Log(5, "log.txt");
+
 Log::Log(int bufmaxsize=5,string filename="log.txt")
 {
     buf_max_size=bufmaxsize;
@@ -16,6 +19,10 @@ Log::Log(int bufmaxsize=5,string filename="log.txt")
     buf_point=&buf1;
     buf_flag=1;
     mutex_log_bufpoint.unlock();
+}
+
+Log* Log::getInstance(){
+    return m_log;
 }
 
 Log::~Log()
@@ -55,7 +62,6 @@ void Log::writelog(int logtype,string ipaddr,string logtxt)
     int n = snprintf(buf_txt, 999, "%s %s-- [%d-%02d-%02d %02d:%02d:%02d] : %s",
              s, ipaddr.c_str(), my_tm.tm_year + 1900, my_tm.tm_mon + 1, my_tm.tm_mday,
              my_tm.tm_hour, my_tm.tm_min, my_tm.tm_sec, logtxt.c_str());
-             cout<<"!"<<endl;
     buf_txt[n] = '\n';
     buf_txt[n+1] = '\0';
     string log_str = buf_txt;
