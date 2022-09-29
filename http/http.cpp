@@ -181,7 +181,7 @@ Http::HTTP_CODE Http::parse_request_line(char *text)
             m_url = "/static.html";
         }
         else{
-            m_url = const_cast<char*>(static_cast<string>(subMatch[2]).c_str());
+            m_url = "/404.html";
         }
         //m_url = const_cast<char*>(static_cast<string>(subMatch[2]).c_str());
         aaaa = m_url;
@@ -350,8 +350,18 @@ Http::HTTP_CODE Http::do_request()
 
     //根据请求url执行业务
     //URL: http://IP address:port/page1.html
-    if(s == "static.html"){
+    if(m_method == GET){
+        cout << "s:" << s << endl;
+        string path = doc_root + s;
+        read_html(path);
+    }
+    else if(s == "static.html"){
         //获取 /page1.html的内容并加入到content_buf中去
+        cout << "s:" << s << endl;
+        string path = doc_root + s;
+        read_html(path);
+    }
+    else if(s == "404.html"){
         cout << "s:" << s << endl;
         string path = doc_root + s;
         read_html(path);
