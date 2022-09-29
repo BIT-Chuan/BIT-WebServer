@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<style type="text/css">
+		* {
+			margin: 0;
+			padding: 0;
+		}
+		
+		body {
+			height: 100vh;
+			background: linear-gradient(#FA8072, #243b55);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			font-size: 50px;
+			color: #243b55;
+        }
+</style>
+<body>
+<form action="return_sum" method="post">
+    <input type="text" name="int1" style="width:200px;height:50px;font-size:25px;"/>
+	    <select  name = "opt" style="width:50px;height:50px;font-size:25px;">
+		        <option value="add">+</option>
+		        <option value="sub">-</option>
+		        <option value="mul">*</option>
+		        <option value="div">/</option>
+		    </select>
+    <input type="text" name="int2" style="width:200px;height:50px;font-size:25px;"/>
+    <button type="submit" style="width:200px;height:50px;font-size:25px;">submit</button>
+</form>
+</body>
+</html>
