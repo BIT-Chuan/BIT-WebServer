@@ -14,10 +14,11 @@
 #include"../epoll/epoller.h"
 #include"../http/http.h"
 #include"../log/log.h"
+#include"../sqlconnpool/sqlconnpool.h"
 
 class WebServer{
 public:
-    WebServer(int port, int threadNum, int close_log, std::string user, std::string passwd, std::string sqlname);
+    WebServer(int port, int threadNum, std::string user, std::string passwd, std::string sqlname, int sqlport);
     ~WebServer();
     void run();
 private:
@@ -38,7 +39,6 @@ private:
     uint32_t listen_events;
     uint32_t conn_events;
     bool isClosed;
-    int m_closeLog;
     std::string m_user;
     std::string m_passwd;
     std::string m_sqlname;

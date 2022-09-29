@@ -23,7 +23,7 @@ unordered_map<string, string> users;
 
 //初始化连接,外部调用初始化套接字地址
 void Http::init(int sockfd, const sockaddr_in &addr, char *root,
-                     int close_log, string user, string passwd, string sqlname)
+                    string user, string passwd, string sqlname)
 {
     m_sockfd = sockfd;
     m_address = addr;
@@ -31,7 +31,6 @@ void Http::init(int sockfd, const sockaddr_in &addr, char *root,
     //m_user_count++;
 
     doc_root = root;
-    m_close_log = close_log;
 
     strcpy(sql_user, user.c_str());
     strcpy(sql_passwd, passwd.c_str());
@@ -414,9 +413,12 @@ Http::HTTP_CODE Http::do_request()
         char id[100];
         for (int i = 3; m_string[i] != '\0'; ++i)id[i-3] = m_string[i];
         //todo:根据id返回sql结果
-        
-        //todo:将学生信息的html文本形式放入m_write_buf
-        
+        MYSQL* con = connection_pool::GetInstance()->GetConnection();
+        string res = connection_pool::GetInstance()->connection_pool::retquery(con, stoi(id));
+        //todo:将学生信息的html文本形式放入content_buf
+        char* p = &res[0];
+        snprintf(content_buf, sizeof(content_buf), "%s", p);
+        content_idx += strlen(content_buf);
     }
 
 

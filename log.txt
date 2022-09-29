@@ -1162,3 +1162,213 @@
 
 [info]: 192.168.133.1-- [2022-09-29 19:26:53] : Write event
 
+[info]: localhost-- [2022-09-29 21:04:30] : Server Running!
+
+[info]: 192.168.133.1-- [2022-09-29 21:04:40] : Client connected
+
+[info]: 192.168.133.1-- [2022-09-29 21:04:40] : Read event
+
+[erro]: 192.168.133.1-- [2022-09-29 21:04:40] : parse_headers return GET_REQUEST
+
+[erro]: 192.168.133.1-- [2022-09-29 21:04:40] : GET_REQUEST->do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:04:40] : do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:04:40] : s:post.html
+
+[info]: 192.168.133.1-- [2022-09-29 21:04:40] : Write event
+
+[info]: 192.168.133.1-- [2022-09-29 21:04:45] : Read event
+
+[erro]: 192.168.133.1-- [2022-09-29 21:04:45] : parse_headers return GET_REQUEST
+
+[erro]: 192.168.133.1-- [2022-09-29 21:04:45] : GET_REQUEST->do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:04:45] : do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:04:45] : s:stuid.html
+
+[info]: 192.168.133.1-- [2022-09-29 21:04:45] : Client connected
+
+[info]: 192.168.133.1-- [2022-09-29 21:04:45] : Write event
+
+[info]: 192.168.133.1-- [2022-09-29 21:04:45] : Read event
+
+[erro]: 192.168.133.1-- [2022-09-29 21:04:45] : parse_headers return GET_REQUEST
+
+[erro]: 192.168.133.1-- [2022-09-29 21:04:45] : GET_REQUEST->do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:04:45] : do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:04:45] : s:
+
+[info]: 192.168.133.1-- [2022-09-29 21:04:45] : Write event
+
+[info]: 192.168.133.1-- [2022-09-29 21:04:49] : Read event
+
+[erro]: 192.168.133.1-- [2022-09-29 21:04:49] : parse_contetn return GET_REQUEST
+
+[erro]: 192.168.133.1-- [2022-09-29 21:04:49] : do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:04:49] : s:stuid.html
+
+[info]: 192.168.133.1-- [2022-09-29 21:04:49] : Write event
+
+[info]: 192.168.133.1-- [2022-09-29 21:04:49] : Client disconnected
+
+[info]: 192.168.133.1-- [2022-09-29 21:04:49] : Read event
+
+[erro]: 192.168.133.1-- [2022-09-29 21:04:49] : parse_headers return GET_REQUEST
+
+[erro]: 192.168.133.1-- [2022-09-29 21:04:49] : GET_REQUEST->do_request
+
+[info]: localhost-- [2022-09-29 21:06:18] : Server Running!
+
+[info]: 192.168.133.1-- [2022-09-29 21:06:33] : Client connected
+
+[info]: 192.168.133.1-- [2022-09-29 21:06:33] : Read event
+
+[info]: 192.168.133.1-- [2022-09-29 21:06:33] : Client connected
+
+[erro]: 192.168.133.1-- [2022-09-29 21:06:33] : parse_headers return GET_REQUEST
+
+[erro]: 192.168.133.1-- [2022-09-29 21:06:33] : GET_REQUEST->do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:06:33] : do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:06:33] : s:stuid.html
+
+[info]: 192.168.133.1-- [2022-09-29 21:06:33] : Write event
+
+[info]: 192.168.133.1-- [2022-09-29 21:06:33] : Read event
+
+[erro]: 192.168.133.1-- [2022-09-29 21:06:33] : parse_headers return GET_REQUEST
+
+[erro]: 192.168.133.1-- [2022-09-29 21:06:33] : GET_REQUEST->do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:06:33] : do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:06:33] : s:
+
+[info]: 192.168.133.1-- [2022-09-29 21:06:33] : Write event
+
+[info]: 192.168.133.1-- [2022-09-29 21:06:35] : Read event
+
+[erro]: 192.168.133.1-- [2022-09-29 21:06:35] : parse_contetn return GET_REQUEST
+
+[erro]: 192.168.133.1-- [2022-09-29 21:06:35] : do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:06:35] : s:stuid.html
+
+[info]: 192.168.133.1-- [2022-09-29 21:06:35] : Write event
+
+[info]: 192.168.133.1-- [2022-09-29 21:06:35] : Client disconnected
+
+[info]: 192.168.133.1-- [2022-09-29 21:06:35] : Read event
+
+[erro]: 192.168.133.1-- [2022-09-29 21:06:35] : parse_headers return GET_REQUEST
+
+[erro]: 192.168.133.1-- [2022-09-29 21:06:35] : GET_REQUEST->do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:06:35] : do_request
+
+[info]: localhost-- [2022-09-29 21:09:42] : Server Running!
+
+[info]: 192.168.133.1-- [2022-09-29 21:09:47] : Client connected
+
+[info]: 192.168.133.1-- [2022-09-29 21:09:47] : Read event
+
+[info]: 192.168.133.1-- [2022-09-29 21:09:47] : Client connected
+
+[erro]: 192.168.133.1-- [2022-09-29 21:09:47] : parse_headers return GET_REQUEST
+
+[erro]: 192.168.133.1-- [2022-09-29 21:09:47] : GET_REQUEST->do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:09:47] : do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:09:47] : s:stuid.html
+
+[info]: 192.168.133.1-- [2022-09-29 21:09:47] : Write event
+
+[info]: 192.168.133.1-- [2022-09-29 21:09:47] : Read event
+
+[erro]: 192.168.133.1-- [2022-09-29 21:09:47] : parse_headers return GET_REQUEST
+
+[erro]: 192.168.133.1-- [2022-09-29 21:09:47] : GET_REQUEST->do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:09:47] : do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:09:47] : s:
+
+[info]: 192.168.133.1-- [2022-09-29 21:09:47] : Write event
+
+[info]: 192.168.133.1-- [2022-09-29 21:09:49] : Read event
+
+[erro]: 192.168.133.1-- [2022-09-29 21:09:49] : parse_contetn return GET_REQUEST
+
+[erro]: 192.168.133.1-- [2022-09-29 21:09:49] : do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:09:49] : s:stuid.html
+
+[info]: 192.168.133.1-- [2022-09-29 21:09:49] : Write event
+
+[info]: 192.168.133.1-- [2022-09-29 21:09:49] : Client disconnected
+
+[info]: 192.168.133.1-- [2022-09-29 21:09:49] : Read event
+
+[erro]: 192.168.133.1-- [2022-09-29 21:09:49] : parse_headers return GET_REQUEST
+
+[erro]: 192.168.133.1-- [2022-09-29 21:09:49] : GET_REQUEST->do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:09:49] : do_request
+
+[info]: localhost-- [2022-09-29 21:14:29] : Server Running!
+
+[info]: 192.168.133.1-- [2022-09-29 21:14:35] : Client connected
+
+[info]: 192.168.133.1-- [2022-09-29 21:14:35] : Read event
+
+[info]: 192.168.133.1-- [2022-09-29 21:14:35] : Client connected
+
+[erro]: 192.168.133.1-- [2022-09-29 21:14:35] : parse_headers return GET_REQUEST
+
+[erro]: 192.168.133.1-- [2022-09-29 21:14:35] : GET_REQUEST->do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:14:35] : do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:14:35] : s:stuid.html
+
+[info]: 192.168.133.1-- [2022-09-29 21:14:35] : Write event
+
+[info]: 192.168.133.1-- [2022-09-29 21:14:35] : Read event
+
+[erro]: 192.168.133.1-- [2022-09-29 21:14:35] : parse_headers return GET_REQUEST
+
+[erro]: 192.168.133.1-- [2022-09-29 21:14:35] : GET_REQUEST->do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:14:35] : do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:14:35] : s:
+
+[info]: 192.168.133.1-- [2022-09-29 21:14:35] : Write event
+
+[info]: 192.168.133.1-- [2022-09-29 21:14:37] : Read event
+
+[erro]: 192.168.133.1-- [2022-09-29 21:14:37] : parse_contetn return GET_REQUEST
+
+[erro]: 192.168.133.1-- [2022-09-29 21:14:37] : do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:14:37] : s:stuid.html
+
+[info]: 192.168.133.1-- [2022-09-29 21:14:37] : Write event
+
+[info]: 192.168.133.1-- [2022-09-29 21:14:37] : Client disconnected
+
+[info]: 192.168.133.1-- [2022-09-29 21:14:37] : Read event
+
+[erro]: 192.168.133.1-- [2022-09-29 21:14:37] : parse_headers return GET_REQUEST
+
+[erro]: 192.168.133.1-- [2022-09-29 21:14:37] : GET_REQUEST->do_request
+
+[erro]: 192.168.133.1-- [2022-09-29 21:14:37] : do_request
+

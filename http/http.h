@@ -27,6 +27,7 @@
 #include<iostream>
 
 #include"../log/log.h"
+#include"../sqlconnpool/sqlconnpool.h"
 
 class Http{
 public:
@@ -74,7 +75,7 @@ public:
     ~Http() {}
 
 public:
-    void init(int sockfd, const sockaddr_in &addr, char *, int, std::string user, std::string passwd, std::string sqlname);
+    void init(int sockfd, const sockaddr_in &addr, char *, std::string user, std::string passwd, std::string sqlname);
     bool process();
     bool read_once();
     bool write(int*);
@@ -145,7 +146,6 @@ private:
     char *doc_root;
 
     std::unordered_map<std::string, std::string> m_users;
-    int m_close_log;
 
     char sql_user[100];
     char sql_passwd[100];

@@ -1,15 +1,15 @@
 #include"webserver.h"
 using namespace std;
 
-WebServer::WebServer(int port, int threadNum, int close_log, std::string user, std::string passwd, std::string sqlname)
+WebServer::WebServer(int port, int threadNum, std::string user, std::string passwd, std::string sqlname, int sqlport)
     : m_port(port), m_threadpool(new ThreadPool(threadNum)), m_epoller(new Epoller(10)),
-    m_closeLog(close_log), m_user(user), m_passwd(passwd), m_sqlname(sqlname)
+    m_user(user), m_passwd(passwd), m_sqlname(sqlname)
 {
     sourceDir = getcwd(nullptr, 256);
     strncat(sourceDir, "/root/", 6);
     //Http::doc_root = sourceDir;
+    connection_pool::GetInstance()->init("localhost", user, passwd, sqlname, sqlport, 8);
 
-    isClosed = false;
     listen_events = EPOLLRDHUP | EPOLLET;
     conn_events = EPOLLONESHOT | EPOLLRDHUP | EPOLLET;
     
@@ -104,7 +104,7 @@ void WebServer::dealListenEvent(){
 }
 
 void WebServer::addClient(int fd, struct sockaddr_in addr){
-    m_users[fd].init(fd, addr, sourceDir, m_closeLog, m_user, m_passwd, m_sqlname);
+    m_users[fd].init(fd, addr, sourceDir, m_user, m_passwd, m_sqlname);
     m_epoller->addFd(fd, EPOLLIN | conn_events);
     setNonBlock(fd);
 }
