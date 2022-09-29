@@ -14,48 +14,23 @@ const char *error_500_form = "There was an unusual problem serving the request f
 
 unordered_map<string, string> users;
 
-void Http::initmysql_result(connection_pool *connPool)
-{
-    //先从连接池中取一个连接
-    MYSQL *mysql = NULL;
-    connectionRAII mysqlcon(&mysql, connPool);
-
-    //在user表中检索username，passwd数据，浏览器端输入
-    if (mysql_query(mysql, "SELECT username,passwd FROM user"))
-    {
-        LOG_ERROR("SELECT error:%s\n", mysql_error(mysql));
-    }
-
-    //从表中检索完整的结果集
-    MYSQL_RES *result = mysql_store_result(mysql);
-
-    //返回结果集中的列数
-    int num_fields = mysql_num_fields(result);
-
-    //返回所有字段结构的数组
-    MYSQL_FIELD *fields = mysql_fetch_fields(result);
-
-    //从结果集中获取下一行，将对应的用户名和密码，存入map中
-    while (MYSQL_ROW row = mysql_fetch_row(result))
-    {
-        string temp1(row[0]);
-        string temp2(row[1]);
-        users[temp1] = temp2;
-    }
-}
+// void Http::initmysql_result(connection_pool *connPool)
+// {
+//     //先从连接池中取一个连接
+    
+// }
 
 
 //初始化连接,外部调用初始化套接字地址
 void Http::init(int sockfd, const sockaddr_in &addr, char *root,
-                     int close_log, string user, string passwd, string sqlname)
+                    string user, string passwd, string sqlname)
 {
     m_sockfd = sockfd;
     m_address = addr;
 
-    m_user_count++;
+    //m_user_count++;
 
     doc_root = root;
-    m_close_log = close_log;
 
     strcpy(sql_user, user.c_str());
     strcpy(sql_passwd, passwd.c_str());
@@ -68,7 +43,7 @@ void Http::init(int sockfd, const sockaddr_in &addr, char *root,
 //check_state默认为分析请求行状态
 void Http::init()
 {
-    mysql = NULL;
+    //mysql = NULL;
     bytes_to_send = 0;
     bytes_have_send = 0;
     m_check_state = CHECK_STATE_REQUESTLINE;
@@ -110,6 +85,9 @@ Http::LINE_STATUS Http::parse_line()
                 m_read_buf[m_checked_idx++] = '\0';
                 return LINE_OK;
             }
+            //char str[INET_ADDRSTRLEN];
+            //inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+            //Log::getInstance()->writelog(3, static_cast<string>(str), "Request format error!\n");
             return LINE_BAD;
         }
         else if (temp == '\n')
@@ -120,6 +98,9 @@ Http::LINE_STATUS Http::parse_line()
                 m_read_buf[m_checked_idx++] = '\0';
                 return LINE_OK;
             }
+            //char str[INET_ADDRSTRLEN];
+            //inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+            //Log::getInstance()->writelog(3, static_cast<string>(str), "Request format error!\n");
             return LINE_BAD;
         }
     }
@@ -153,13 +134,28 @@ bool Http::read_once()
     return true;
 }
 
+string aaaline;
+char* aaaa;
+
 //解析Http请求行，获得请求方法，目标url及Http版本号
 Http::HTTP_CODE Http::parse_request_line(char *text)
 {
     string line = text; 
-    regex patten("^([^ ]*) ([^ ]*) Http/([^ ]*)$");
+    aaaline = line;
+    regex patten("^([^ ]*) ([^ ]*) HTTP/([^ ]*)$");
     smatch subMatch;
+    {
+        lock_guard<mutex>locker(m_mutex);
+        //cout << "111" << endl;
+        cout << "line:" << aaaline << endl;
+        //cout << "text:" << text << endl;
+    }
     if(regex_match(line, subMatch, patten)){
+        {
+            lock_guard<mutex>locker(m_mutex);
+            cout << "2222" << endl;
+        }
+        //cout << "method:" << subMatch[1] << endl;
         if(subMatch[1] == "GET"){
             m_method = GET;
         }else{
@@ -167,9 +163,28 @@ Http::HTTP_CODE Http::parse_request_line(char *text)
             cgi = 1;
         }
         if(subMatch[2] == "/"){
-            m_url = "/judge.html";
-        }else{
+            m_url = "/index.html";
+
+        }else if(subMatch[2] == "/post.html"){
+            m_url = "/post.html";
+        }
+        else if(subMatch[2] == "/postresponse.html"){
+            m_url = "/postresponse.html";
+        }
+        else if(subMatch[2] == "/stuid.html"){
+            m_url = "/stuid.html";
+        }
+        else if(subMatch[2] == "/page1.html"){
+            m_url = "/page1.html";
+        }
+        else{
             m_url = const_cast<char*>(static_cast<string>(subMatch[2]).c_str());
+        }
+        //m_url = const_cast<char*>(static_cast<string>(subMatch[2]).c_str());
+        aaaa = m_url;
+        {
+            lock_guard<mutex>locker(m_mutex);
+            cout << "m_url" << aaaa << endl;
         }
         m_version = const_cast<char*>(static_cast<string>(subMatch[3]).c_str());
         m_check_state = CHECK_STATE_HEADER;
@@ -190,29 +205,32 @@ Http::HTTP_CODE Http::parse_headers(char *text)
             m_check_state = CHECK_STATE_CONTENT;
             return NO_REQUEST;
         }
+        char str[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+        Log::getInstance()->writelog(3, static_cast<string>(str), "parse_headers return GET_REQUEST\n");
         return GET_REQUEST;
     }
     string line = text;
     regex patten("^([^:]*): ?(.*)$");
     smatch subMatch;
 
+
     if(regex_match(line,subMatch,patten)){
-        switch (subMatch.str(1))
-        {
-        case "Connection":
+        if(subMatch[1] == "Connection"){
             if(subMatch[2] == "keep-alive"){
                 m_linger = true;
             }
-            break;
-        case "Content-length":
-            m_content_length = subMatch[2];
-            break;
-        case "Host":
-            m_host = subMatch[2];
-            break;
-        default:
-            LOG_INFO("oop!unknow header: %s", text);
-            break;
+        }
+        else if(subMatch[1] == "Content-Length"){
+            m_content_length = stoi(static_cast<string>(subMatch[2]));
+        }
+        else if(subMatch[1] == "Host"){
+            m_host = const_cast<char*>(static_cast<string>(subMatch[2]).c_str());
+        }
+        else{
+            char str[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+            //Log::getInstance()->writelog(3, static_cast<string>(str), "Unkown header: " + static_cast<string>(subMatch[1]) + "\n");
         }
         return NO_REQUEST;
     }
@@ -223,11 +241,16 @@ Http::HTTP_CODE Http::parse_content(char *text)
 {
     if (m_read_idx >= (m_content_length + m_checked_idx))
     {
+        char str[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+        Log::getInstance()->writelog(3, static_cast<string>(str), "parse_contetn return GET_REQUEST\n");
         text[m_content_length] = '\0';
-        //POST请求中最后为输入的用户名和密码
         m_string = text;
         return GET_REQUEST;
     }
+    char str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+    Log::getInstance()->writelog(3, static_cast<string>(str), "parse_contetn return NO_REQUEST\n");
     return NO_REQUEST;
 }
 
@@ -239,13 +262,19 @@ Http::HTTP_CODE Http::process_read()
 
     while ((m_check_state == CHECK_STATE_CONTENT && line_status == LINE_OK) || ((line_status = parse_line()) == LINE_OK))
     {
+        cout << "process_read::m_check_state:" << m_check_state << endl;
         text = get_line();
+        cout << "process_read::text:" << text << endl;
         m_start_line = m_checked_idx;
-        LOG_INFO("%s", text);
+        //char str[INET_ADDRSTRLEN];
+        //inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+        //Log::getInstance()->writelog(3, static_cast<string>(str), static_cast<string>(text) + "\n");
+        
         switch (m_check_state)
         {
         case CHECK_STATE_REQUESTLINE:
         {
+            cout << "CHECK_STATE_REQUESTLINE" << endl;
             ret = parse_request_line(text);
             if (ret == BAD_REQUEST)
                 return BAD_REQUEST;
@@ -254,10 +283,18 @@ Http::HTTP_CODE Http::process_read()
         case CHECK_STATE_HEADER:
         {
             ret = parse_headers(text);
-            if (ret == BAD_REQUEST)
+            if (ret == BAD_REQUEST){
+                char str[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+                Log::getInstance()->writelog(3, static_cast<string>(str), "BAD_REQUEST\n");
                 return BAD_REQUEST;
+            }
             else if (ret == GET_REQUEST)
             {
+                char str[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+                Log::getInstance()->writelog(3, static_cast<string>(str), "GET_REQUEST->do_request\n");
+
                 return do_request();
             }
             break;
@@ -271,6 +308,9 @@ Http::HTTP_CODE Http::process_read()
             break;
         }
         default:
+            char str[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+            Log::getInstance()->writelog(3, static_cast<string>(str), "INTERNAL_ERROR\n");
             return INTERNAL_ERROR;
         }
     }
@@ -282,201 +322,143 @@ Http::HTTP_CODE Http::process_read()
  * 
  * @return Http::HTTP_CODE 
  */
+
 Http::HTTP_CODE Http::do_request()
 {
+    char str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+    Log::getInstance()->writelog(3, static_cast<string>(str), "do_request\n");
+
     strcpy(m_real_file, doc_root);
     int len = strlen(doc_root);
+
     //printf("m_url:%s\n", m_url);
-    const char *p = strrchr(m_url, '/');
-    int index = p - &m_url[0]+1;
+
     string s = m_url;
-    s = s.str(index, strlen(m_url) - index);
+    int index = s.find_last_of('/') + 1;
+
+    cout << "m_url:" << m_url << endl;
+
+
+    s = s.substr(index, s.size() - index);
+    //char str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+    Log::getInstance()->writelog(3, static_cast<string>(str), "s:" + s + "\n");
 
     //根据请求url执行业务
     //URL: http://IP address:port/page1.html
     if(s == "page1.html"){
         //获取 /page1.html的内容并加入到content_buf中去
-        read_html(s);
+        cout << "s:" << s << endl;
+        string path = doc_root + s;
+        read_html(path);
     }
     //http://IP address:port/
-    else if(s == ""){
-        s = "index.html";
-        read_html(s);
+    else if(s == "index.html"){
+        cout << "s:" << s << endl;
+        string path = doc_root + s;
+        read_html(path);
     }
+    else if(s == "post.html" && m_method == GET){
+        cout << "s:" << s << endl;
+        string path = doc_root + s;
+        read_html(path);
+    }
+    // else if(s == "postresponse.html" && m_method == POST){
+    //     char str[INET_ADDRSTRLEN];
+    //     inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+    //     Log::getInstance()->writelog(3, static_cast<string>(str), m_string);
+    //     string path = doc_root + s;
+    //     read_html(path);
+    // }
     //URL: http://IP address:port/cgi-bin/calculator.pl 且请求为post
-    else if(s == "calculator.pl" && m_method == POST){
-        //执行计算操作并将计算结果的html文本形式放入content_buf
-        char a_string[100], b_string[100];
-        int i = 0;
-        while(m_string[i] != '+'){
-            a_string[i] = m_string[i];
-            ++i;
+    else if(s == "postresponse.html" && m_method == POST){
+        string line = m_string;
+        regex patten("^int1=([1-9]*)&opt=([^&]*)&int2=([1-9]]*)$");
+        smatch subMatch;
+        if(regex_match(line,subMatch,patten)){
+            int a = stoi(subMatch[1]);
+            int b = stoi(subMatch[3]);
+            int ans = 0;
+            string opt = subMatch[2];
+            if(opt == "add"){
+                ans = a + b;
+            }
+            else if(opt == "sub"){
+                ans = a - b;
+            }
+            else if(opt == "mul"){
+                ans = a * b;
+            }
+            else if(opt == "div"){
+                ans = a / b;
+            }
+            else{}
+            snprintf(content_buf, sizeof(content_buf), "%d", ans);
+            content_idx += strlen(content_buf);
         }
-        ++i;
-        int j = 0;
-        while(m_string[i] != '\0'){
-            b_string[j] = m_string[i];
-            ++j;
-            ++i;
+        else{
+
         }
-        int a = atoi(a_string);
-        int b = atoi(b_string);
-        int ans = a + b;
-        snprintf(content_buf, sizeof(content_buf), "%d", ans);
-    }
-    else if(s == "calculator.pl" && m_method == GET){
-        s = "calculator.html";
-        read_html(s);
     }
     //URL: http://IP address:port/cgi-bin/query.pl 请求为GET,传递html页面
-    else if(s == "query.pl" && m_method == GET){
-        s = "query.html";
-        read_html(s);
+    else if(s == "stuid.html" && m_method == GET){
+        cout << "s:" << s << endl;
+        string path = doc_root + s;
+        read_html(path);
     }
     //URL: http://IP address:port/cgi-bin/query.pl 请求为POST,返回查询内容
-    else if(s == "query.pl" && m_method == POST){
+    else if(s == "stuid.html" && m_method == POST){
         //请求体内容为：  ID=${id}
         char id[100];
         for (int i = 3; m_string[i] != '\0'; ++i)id[i-3] = m_string[i];
         //todo:根据id返回sql结果
-        
-        //todo:将学生信息的html文本形式放入m_write_buf
-
+        MYSQL* con = connection_pool::GetInstance()->GetConnection();
+        string res = connection_pool::GetInstance()->connection_pool::retquery(con, stoi(id));
+        //todo:将学生信息的html文本形式放入content_buf
+        char* p = &res[0];
+        snprintf(content_buf, sizeof(content_buf), "%s", p);
+        content_idx += strlen(content_buf);
     }
-    // //处理cgi
-    // if (cgi == 1 && (*(p + 1) == '2' || *(p + 1) == '3'))
-    // {
 
-    //     //根据标志判断是登录检测还是注册检测
-    //     char flag = m_url[1];
 
-    //     char *m_url_real = (char *)malloc(sizeof(char) * 200);
-    //     strcpy(m_url_real, "/");
-    //     strcat(m_url_real, m_url + 2);
-    //     strncpy(m_real_file + len, m_url_real, FILENAME_LEN - len - 1);
-    //     free(m_url_real);
-
-    //     //将用户名和密码提取出来
-    //     //user=123&passwd=123
-    //     char name[100], password[100];
-    //     int i;
-    //     for (i = 5; m_string[i] != '&'; ++i)
-    //         name[i - 5] = m_string[i];
-    //     name[i - 5] = '\0';
-
-    //     int j = 0;
-    //     for (i = i + 10; m_string[i] != '\0'; ++i, ++j)
-    //         password[j] = m_string[i];
-    //     password[j] = '\0';
-
-    //     if (*(p + 1) == '3')
-    //     {
-    //         //如果是注册，先检测数据库中是否有重名的
-    //         //没有重名的，进行增加数据
-    //         char *sql_insert = (char *)malloc(sizeof(char) * 200);
-    //         strcpy(sql_insert, "INSERT INTO user(username, passwd) VALUES(");
-    //         strcat(sql_insert, "'");
-    //         strcat(sql_insert, name);
-    //         strcat(sql_insert, "', '");
-    //         strcat(sql_insert, password);
-    //         strcat(sql_insert, "')");
-
-    //         if (users.find(name) == users.end())
-    //         {
-    //             int res = 0;
-    //             {
-    //                 lock_guard<mutex>locker(m_mutex);
-    //                 res = mysql_query(mysql, sql_insert);
-    //                 users.insert(pair<string, string>(name, password));
-    //             }
-                
-    //             if (!res)
-    //                 strcpy(m_url, "/log.html");
-    //             else
-    //                 strcpy(m_url, "/registerError.html");
-    //         }
-    //         else
-    //             strcpy(m_url, "/registerError.html");
-    //     }
-    //     //如果是登录，直接判断
-    //     //若浏览器端输入的用户名和密码在表中可以查找到，返回1，否则返回0
-    //     else if (*(p + 1) == '2')
-    //     {
-    //         if (users.find(name) != users.end() && users[name] == password)
-    //             strcpy(m_url, "/welcome.html");
-    //         else
-    //             strcpy(m_url, "/logError.html");
-    //     }
+    // if (stat(m_real_file, &m_file_stat) < 0){
+    //     char str[INET_ADDRSTRLEN];
+    //     inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+    //     //Log::getInstance()->writelog(3, static_cast<string>(str), "No resource: " + static_cast<string>(m_real_file) + "\n");
+    //     cout << "no resource" << endl;
+    //     return NO_RESOURCE;
     // }
 
-    // if (*(p + 1) == '0')
-    // {
-    //     char *m_url_real = (char *)malloc(sizeof(char) * 200);
-    //     strcpy(m_url_real, "/register.html");
-    //     strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
+        
 
-    //     free(m_url_real);
+    // if (!(m_file_stat.st_mode & S_IROTH)){
+    //     char str[INET_ADDRSTRLEN];
+    //     inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+    //     //Log::getInstance()->writelog(3, static_cast<string>(str), "No priority: " + static_cast<string>(m_real_file) + "\n");
+    //     return FORBIDDEN_REQUEST;
     // }
-    // else if (*(p + 1) == '1')
-    // {
-    //     char *m_url_real = (char *)malloc(sizeof(char) * 200);
-    //     strcpy(m_url_real, "/log.html");
-    //     strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
+        
 
-    //     free(m_url_real);
+    // if (S_ISDIR(m_file_stat.st_mode)){
+    //     char str[INET_ADDRSTRLEN];
+    //     inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+    //     //Log::getInstance()->writelog(3, static_cast<string>(str), "Invalid path: " + static_cast<string>(m_real_file) + "\n");
+    //     return BAD_REQUEST;
     // }
-    // else if (*(p + 1) == '5')
-    // {
-    //     char *m_url_real = (char *)malloc(sizeof(char) * 200);
-    //     strcpy(m_url_real, "/picture.html");
-    //     strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
-
-    //     free(m_url_real);
-    // }
-    // else if (*(p + 1) == '6')
-    // {
-    //     char *m_url_real = (char *)malloc(sizeof(char) * 200);
-    //     strcpy(m_url_real, "/video.html");
-    //     strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
-
-    //     free(m_url_real);
-    // }
-    // else if (*(p + 1) == '7')
-    // {
-    //     char *m_url_real = (char *)malloc(sizeof(char) * 200);
-    //     strcpy(m_url_real, "/fans.html");
-    //     strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
-
-    //     free(m_url_real);
-    // }
-    // else
-    //     strncpy(m_real_file + len, m_url, FILENAME_LEN - len - 1);
-
-    if (stat(m_real_file, &m_file_stat) < 0)
-        return NO_RESOURCE;
-
-    if (!(m_file_stat.st_mode & S_IROTH))
-        return FORBIDDEN_REQUEST;
-
-    if (S_ISDIR(m_file_stat.st_mode))
-        return BAD_REQUEST;
+        
 
     // int fd = open(m_real_file, O_RDONLY);
     // m_file_address = (char *)mmap(0, m_file_stat.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
     // close(fd);
     return FILE_REQUEST;
 }
-void Http::unmap()
-{
-    if (m_file_address)
-    {
-        munmap(m_file_address, m_file_stat.st_size);
-        m_file_address = 0;
-    }
-}
+
+
 bool Http::write(int* save_errno)
 {
     int temp = 0;
+    cout << "write::m_write_buf:" << m_write_buf << endl;
 
     if (bytes_to_send == 0)
     {
@@ -490,12 +472,14 @@ bool Http::write(int* save_errno)
 
         if (temp < 0)
         {
+            cout << "case temp < 0" << endl;
             if (errno == EAGAIN)
             {
+                cout << "errno == EAGAIN" << endl;
                 *save_errno = EAGAIN;
                 return true;
             }
-            unmap();
+            cout << "errno != EAGAIN" << endl;
             return false;
         }
 
@@ -515,15 +499,16 @@ bool Http::write(int* save_errno)
 
         if (bytes_to_send <= 0)
         {
-            unmap();
 
             if (m_linger)
             {
                 init();
+                cout << "reinit success" << endl;
                 return true;
             }
             else
             {
+                cout << "http1 close conn" << endl;
                 return false;
             }
         }
@@ -551,8 +536,6 @@ bool Http::add_response(const char *format, ...)
     }
     m_write_idx += len;
     va_end(arg_list);
-
-    LOG_INFO("request:%s", m_write_buf);
 
     return true;
 }
@@ -624,7 +607,7 @@ bool Http::process_write(HTTP_CODE ret)
     case FILE_REQUEST:
     {
         add_status_line(200, ok_200_title);
-        if (m_file_stat.st_size != 0)
+        if (content_idx != 0)
         {
             //往缓冲区写入首部及内容
             add_headers(content_idx);
@@ -633,6 +616,8 @@ bool Http::process_write(HTTP_CODE ret)
             m_iv[0].iov_len = m_write_idx;
             m_iv_count = 1;
             bytes_to_send = m_write_idx;
+            bzero(&content_buf, sizeof(content_buf));
+            content_idx = 0;
             return true;
         }
         else
@@ -646,6 +631,7 @@ bool Http::process_write(HTTP_CODE ret)
     default:
         return false;
     }
+    cout << "process_write::m_write_buf:" << m_write_buf << endl;
     m_iv[0].iov_base = m_write_buf;
     m_iv[0].iov_len = m_write_idx;
     m_iv_count = 1;
@@ -663,19 +649,25 @@ bool Http::process()
     return false;
 }
 
+
+
 bool Http::read_html(string url){
     ifstream infile;
 	infile.open(url);
+    
 	if (!infile.is_open())
 	{
-		LOG_ERROR("Html error: 打开文件失败\n");
+        char str[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+        Log::getInstance()->writelog(3, static_cast<string>(str), "Open html file failed!\n");
 		return false;
 	}
 	string buf;
 	while (getline(infile,buf))
 	{
 		strcat(content_buf,buf.c_str());
-        content_idx += strlen(buf.c_str);
+        content_idx += strlen(buf.c_str());
 	}
+    cout << "content_buf:" << content_buf << endl;
 	return true;
 }

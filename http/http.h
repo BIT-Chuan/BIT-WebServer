@@ -22,6 +22,12 @@
 #include <sys/uio.h>
 #include <unordered_map>
 #include<mutex>
+#include<fstream>
+#include<cstring>
+#include<iostream>
+
+#include"../log/log.h"
+#include"../sqlconnpool/sqlconnpool.h"
 
 class Http{
 public:
@@ -69,7 +75,7 @@ public:
     ~Http() {}
 
 public:
-    void init(int sockfd, const sockaddr_in &addr, char *, int, std::string user, std::string passwd, std::string sqlname);
+    void init(int sockfd, const sockaddr_in &addr, char *, std::string user, std::string passwd, std::string sqlname);
     bool process();
     bool read_once();
     bool write(int*);
@@ -77,7 +83,7 @@ public:
     {
         return &m_address;
     }
-    void initmysql_result(connection_pool *connPool);
+    //void initmysql_result(connection_pool *connPool);
     int timer_flag;
     int improv;
     int getFd(){
@@ -105,11 +111,11 @@ private:
     bool add_blank_line();
 
     //根据路径读入html
-    bool read_html(string url);
+    bool read_html(std::string url);
 public:
     static int m_epollfd;
     static int m_user_count;
-    MYSQL *mysql;
+    //MYSQL *mysql;
     int m_state;  //读为0, 写为1
 
 private:
@@ -140,7 +146,6 @@ private:
     char *doc_root;
 
     std::unordered_map<std::string, std::string> m_users;
-    int m_close_log;
 
     char sql_user[100];
     char sql_passwd[100];
