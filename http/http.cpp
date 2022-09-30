@@ -162,23 +162,26 @@ Http::HTTP_CODE Http::parse_request_line(char *text)
             m_method = POST;
             cgi = 1;
         }
-        if(subMatch[2] == "/"){
+        if(subMatch[2] == "/" || subMatch[2] == "/index"){
             m_url = "/index.html";
 
-        }else if(subMatch[2] == "/post.html"){
-            m_url = "/post.html";
+        }else if(subMatch[2] == "/cal_post"){
+            m_url = "/cal_post.html";
         }
-        else if(subMatch[2] == "/postresponse.html"){
-            m_url = "/postresponse.html";
+        else if(subMatch[2] == "/return_sum"){
+            m_url = "/return_sum.html";
         }
-        else if(subMatch[2] == "/stuid.html"){
-            m_url = "/stuid.html";
+        else if(subMatch[2] == "/query"){
+            m_url = "/query.html";
         }
-        else if(subMatch[2] == "/page1.html"){
-            m_url = "/page1.html";
+        else if(subMatch[2] == "/query_return"){
+            m_url = "/query_return.html";
+        }
+        else if(subMatch[2] == "/static"){
+            m_url = "/static.html";
         }
         else{
-            m_url = const_cast<char*>(static_cast<string>(subMatch[2]).c_str());
+            m_url = "/404.html";
         }
         //m_url = const_cast<char*>(static_cast<string>(subMatch[2]).c_str());
         aaaa = m_url;
@@ -347,8 +350,18 @@ Http::HTTP_CODE Http::do_request()
 
     //根据请求url执行业务
     //URL: http://IP address:port/page1.html
-    if(s == "page1.html"){
+    if(m_method == GET){
+        cout << "s:" << s << endl;
+        string path = doc_root + s;
+        read_html(path);
+    }
+    else if(s == "static.html"){
         //获取 /page1.html的内容并加入到content_buf中去
+        cout << "s:" << s << endl;
+        string path = doc_root + s;
+        read_html(path);
+    }
+    else if(s == "404.html"){
         cout << "s:" << s << endl;
         string path = doc_root + s;
         read_html(path);
@@ -359,7 +372,7 @@ Http::HTTP_CODE Http::do_request()
         string path = doc_root + s;
         read_html(path);
     }
-    else if(s == "post.html" && m_method == GET){
+    else if(s == "cal_post.html" && m_method == GET){
         cout << "s:" << s << endl;
         string path = doc_root + s;
         read_html(path);
@@ -372,7 +385,7 @@ Http::HTTP_CODE Http::do_request()
     //     read_html(path);
     // }
     //URL: http://IP address:port/cgi-bin/calculator.pl 且请求为post
-    else if(s == "postresponse.html" && m_method == POST){
+    else if(s == "return_sum.html" && m_method == POST){
         string line = m_string;
         regex patten("^int1=([1-9]*)&opt=([^&]*)&int2=([1-9]]*)$");
         smatch subMatch;
@@ -394,7 +407,17 @@ Http::HTTP_CODE Http::do_request()
                 ans = a / b;
             }
             else{}
-            snprintf(content_buf, sizeof(content_buf), "%d", ans);
+            char tmp[6];
+            int tmp_idx = 0;
+            snprintf(tmp, sizeof(tmp), "%d", ans);
+            cout << "s:" << s << endl;
+            string path = doc_root + s;
+            read_html(path);
+            for(int i = 0;i < strlen(content_buf);i++){
+                if(content_buf[i] == '?'){
+                    content_buf[i] = tmp[tmp_idx++];
+                }
+            }
             content_idx += strlen(content_buf);
         }
         else{
@@ -402,13 +425,13 @@ Http::HTTP_CODE Http::do_request()
         }
     }
     //URL: http://IP address:port/cgi-bin/query.pl 请求为GET,传递html页面
-    else if(s == "stuid.html" && m_method == GET){
+    else if(s == "query.html" && m_method == GET){
         cout << "s:" << s << endl;
         string path = doc_root + s;
         read_html(path);
     }
     //URL: http://IP address:port/cgi-bin/query.pl 请求为POST,返回查询内容
-    else if(s == "stuid.html" && m_method == POST){
+    else if(s == "query_return.html" && m_method == POST){
         //请求体内容为：  ID=${id}
         char id[100];
         for (int i = 3; m_string[i] != '\0'; ++i)id[i-3] = m_string[i];
@@ -417,8 +440,28 @@ Http::HTTP_CODE Http::do_request()
         string res = connection_pool::GetInstance()->connection_pool::retquery(con, stoi(id));
         //todo:将学生信息的html文本形式放入content_buf
         char* p = &res[0];
-        snprintf(content_buf, sizeof(content_buf), "%s", p);
-        content_idx += strlen(content_buf);
+        char tmp[100];
+        int tmp_idx = 0;
+        snprintf(tmp, sizeof(tmp), "%s", p);
+
+        cout << "s:" << s << endl;
+        string path = doc_root + s;
+        read_html(path);
+        
+        for(int i = 0; i < strlen(content_buf);i++){
+            if(content_buf[i] == ':' && content_buf[i+1] == '?'){
+                i++;
+                while(content_buf[i] == '?'){
+                    if(tmp[tmp_idx] != ','){
+                        content_buf[i++] = tmp[tmp_idx++];
+                    }
+                    else content_buf[i++] = '';
+                }
+                tmp_idx++;
+            }
+        }
+
+        content_idx = strlen(content_buf);
     }
 
 
