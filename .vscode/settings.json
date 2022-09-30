@@ -58,6 +58,7 @@
         "thread": "cpp",
         "typeinfo": "cpp",
         "iostream": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "cinttypes": "cpp"
     }
 }
