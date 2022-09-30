@@ -14,21 +14,14 @@ const char *error_500_form = "There was an unusual problem serving the request f
 
 unordered_map<string, string> users;
 
-// void Http::initmysql_result(connection_pool *connPool)
-// {
-//     //先从连接池中取一个连接
-    
-// }
 
-
-//初始化连接,外部调用初始化套接字地址
 void Http::init(int sockfd, const sockaddr_in &addr, char *root,
                     string user, string passwd, string sqlname)
 {
     m_sockfd = sockfd;
+    int one;
+    setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
     m_address = addr;
-
-    //m_user_count++;
 
     doc_root = root;
 
@@ -39,11 +32,8 @@ void Http::init(int sockfd, const sockaddr_in &addr, char *root,
     init();
 }
 
-//初始化新接受的连接
-//check_state默认为分析请求行状态
 void Http::init()
 {
-    //mysql = NULL;
     bytes_to_send = 0;
     bytes_have_send = 0;
     m_check_state = CHECK_STATE_REQUESTLINE;
@@ -67,8 +57,6 @@ void Http::init()
     memset(m_real_file, '\0', FILENAME_LEN);
 }
 
-//从状态机，用于分析出一行内容
-//返回值为行的读取状态，有LINE_OK,LINE_BAD,LINE_OPEN
 Http::LINE_STATUS Http::parse_line()
 {
     char temp;
@@ -85,9 +73,9 @@ Http::LINE_STATUS Http::parse_line()
                 m_read_buf[m_checked_idx++] = '\0';
                 return LINE_OK;
             }
-            //char str[INET_ADDRSTRLEN];
-            //inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
-            //Log::getInstance()->writelog(3, static_cast<string>(str), "Request format error!\n");
+            char str[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+            Log::getInstance()->writelog(3, static_cast<string>(str), "Request format error!\n");
             return LINE_BAD;
         }
         else if (temp == '\n')
@@ -98,17 +86,15 @@ Http::LINE_STATUS Http::parse_line()
                 m_read_buf[m_checked_idx++] = '\0';
                 return LINE_OK;
             }
-            //char str[INET_ADDRSTRLEN];
-            //inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
-            //Log::getInstance()->writelog(3, static_cast<string>(str), "Request format error!\n");
+            char str[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
+            Log::getInstance()->writelog(3, static_cast<string>(str), "Request format error!\n");
             return LINE_BAD;
         }
     }
     return LINE_OPEN;
 }
 
-//循环读取客户数据，直到无数据可读或对方关闭连接
-//非阻塞ET工作模式下，需要一次性将数据读完
 bool Http::read_once()
 {
     if (m_read_idx >= READ_BUFFER_SIZE)
@@ -233,7 +219,7 @@ Http::HTTP_CODE Http::parse_headers(char *text)
         else{
             char str[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
-            //Log::getInstance()->writelog(3, static_cast<string>(str), "Unkown header: " + static_cast<string>(subMatch[1]) + "\n");
+            Log::getInstance()->writelog(3, static_cast<string>(str), "Unkown header: " + static_cast<string>(subMatch[1]) + "\n");
         }
         return NO_REQUEST;
     }
@@ -269,9 +255,6 @@ Http::HTTP_CODE Http::process_read()
         text = get_line();
         cout << "process_read::text:" << text << endl;
         m_start_line = m_checked_idx;
-        //char str[INET_ADDRSTRLEN];
-        //inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
-        //Log::getInstance()->writelog(3, static_cast<string>(str), static_cast<string>(text) + "\n");
         
         switch (m_check_state)
         {
@@ -344,9 +327,6 @@ Http::HTTP_CODE Http::do_request()
 
 
     s = s.substr(index, s.size() - index);
-    //char str[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
-    Log::getInstance()->writelog(3, static_cast<string>(str), "s:" + s + "\n");
 
     //根据请求url执行业务
     //URL: http://IP address:port/page1.html
@@ -387,7 +367,7 @@ Http::HTTP_CODE Http::do_request()
     //URL: http://IP address:port/cgi-bin/calculator.pl 且请求为post
     else if(s == "return_sum.html" && m_method == POST){
         string line = m_string;
-        regex patten("^int1=([1-9]*)&opt=([^&]*)&int2=([1-9]]*)$");
+        regex patten("^int1=([0-9]+)&opt=([^&]*)&int2=([0-9]+)$");
         smatch subMatch;
         if(regex_match(line,subMatch,patten)){
             int a = stoi(subMatch[1]);
@@ -407,18 +387,26 @@ Http::HTTP_CODE Http::do_request()
                 ans = a / b;
             }
             else{}
-            char tmp[6];
+            cout << "a: " << a << endl;
+            cout << "b: " << b << endl;
+            //char tmp[5];
+            string tmp;
+            tmp = to_string(ans);
             int tmp_idx = 0;
-            snprintf(tmp, sizeof(tmp), "%d", ans);
+            //snprintf(tmp, sizeof(tmp), "%d", ans);
+            //tmp_idx = strlen(tmp);
             cout << "s:" << s << endl;
             string path = doc_root + s;
             read_html(path);
             for(int i = 0;i < strlen(content_buf);i++){
-                if(content_buf[i] == '?'){
+                if(content_buf[i] == '?' && tmp_idx <tmp.size()){
                     content_buf[i] = tmp[tmp_idx++];
                 }
+                else if(content_buf[i] == '?'){
+                    content_buf[i] = ' ';
+                }
             }
-            content_idx += strlen(content_buf);
+            content_idx = strlen(content_buf);
         }
         else{
 
@@ -452,10 +440,10 @@ Http::HTTP_CODE Http::do_request()
             if(content_buf[i] == ':' && content_buf[i+1] == '?'){
                 i++;
                 while(content_buf[i] == '?'){
-                    if(tmp[tmp_idx] != ','){
+                    if(tmp[tmp_idx] != ';'){
                         content_buf[i++] = tmp[tmp_idx++];
                     }
-                    else content_buf[i++] = '';
+                    else content_buf[i++] = ' ';
                 }
                 tmp_idx++;
             }
@@ -464,36 +452,6 @@ Http::HTTP_CODE Http::do_request()
         content_idx = strlen(content_buf);
     }
 
-
-    // if (stat(m_real_file, &m_file_stat) < 0){
-    //     char str[INET_ADDRSTRLEN];
-    //     inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
-    //     //Log::getInstance()->writelog(3, static_cast<string>(str), "No resource: " + static_cast<string>(m_real_file) + "\n");
-    //     cout << "no resource" << endl;
-    //     return NO_RESOURCE;
-    // }
-
-        
-
-    // if (!(m_file_stat.st_mode & S_IROTH)){
-    //     char str[INET_ADDRSTRLEN];
-    //     inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
-    //     //Log::getInstance()->writelog(3, static_cast<string>(str), "No priority: " + static_cast<string>(m_real_file) + "\n");
-    //     return FORBIDDEN_REQUEST;
-    // }
-        
-
-    // if (S_ISDIR(m_file_stat.st_mode)){
-    //     char str[INET_ADDRSTRLEN];
-    //     inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str));
-    //     //Log::getInstance()->writelog(3, static_cast<string>(str), "Invalid path: " + static_cast<string>(m_real_file) + "\n");
-    //     return BAD_REQUEST;
-    // }
-        
-
-    // int fd = open(m_real_file, O_RDONLY);
-    // m_file_address = (char *)mmap(0, m_file_stat.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-    // close(fd);
     return FILE_REQUEST;
 }
 

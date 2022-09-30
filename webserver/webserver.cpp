@@ -26,7 +26,9 @@ WebServer::~WebServer(){
 }
 
 bool WebServer::initListenSocket(){
+    int one;
     listenFd = socket(PF_INET, SOCK_STREAM, 0);
+    setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 
     int ret = 0;
     struct sockaddr_in address;
